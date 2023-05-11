@@ -131,6 +131,7 @@ function""" % (
     X_train, X_test = dataset_transform(D)
 
     print(f"final size is : {len(X_train)}")
+    print(f"final size is : {len(X_test)}")
 
     try:
         if hasattr(algo, "supports_prepared_queries"):

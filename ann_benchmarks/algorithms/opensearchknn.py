@@ -37,7 +37,6 @@ class OpenSearchKNN(BaseANN):
 
         mapping = {
             "properties": {
-                "id": {"type": "keyword", "store": True},
                 "vec": {
                     "type": "knn_vector",
                     "dimension": self.dimension,
@@ -61,7 +60,7 @@ class OpenSearchKNN(BaseANN):
 
         def gen():
             for i, vec in enumerate(tqdm(X)):
-                yield {"_op_type": "index", "_index": self.name, "vec": vec.tolist(), "id": str(i + 1)}
+                yield {"_op_type": "index", "_index": self.name, "vec": vec.tolist(), "_id": str(i + 1)}
 
         (_, errors) = bulk(self.client, gen(), chunk_size=500, max_retries=2, request_timeout=10)
         assert len(errors) == 0, errors
@@ -94,13 +93,13 @@ class OpenSearchKNN(BaseANN):
             body=body,
             size=n,
             _source=False,
-            docvalue_fields=["id"],
+            docvalue_fields=["_id"],
             stored_fields="_none_",
-            filter_path=["hits.hits.fields.id"],
+            filter_path=["hits.hits.fields._id"],
             request_timeout=10,
         )
 
-        return [int(h["fields"]["id"][0]) - 1 for h in res["hits"]["hits"]]
+        return [int(h["fields"]["_id"][0]) - 1 for h in res["hits"]["hits"]]
 
     def batch_query(self, X, n):
         self.batch_res = [self.query(q, n) for q in X]
