@@ -48,8 +48,8 @@ thread_pool.search.size: 1\n\
 thread_pool.search.queue_size: 1' > opensearch/config/opensearch.yml
 
 RUN echo '\
--Xms3G\n\
--Xmx3G\n\
+-Xms8G\n\
+-Xmx8G\n\
 -XX:InitiatingHeapOccupancyPercent=30\n\
 -XX:+HeapDumpOnOutOfMemoryError\n\
 -XX:HeapDumpPath=data\n\

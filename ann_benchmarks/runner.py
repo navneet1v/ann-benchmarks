@@ -70,8 +70,19 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
             return [(total / float(len(X)), v) for v in candidates]
 
         if batch:
+            i = 0
+            while i < 4:
+                print(f"Running warmup... for {X_test[i]}")
+                single_query(X_test[i])
+                i = i + 1
             results = batch_query(X_test)
         else:
+            i = 0
+            while i < 4:
+                print(f"Running warmup... for {X_test[i]}")
+                single_query(X_test[i])
+                i = i + 1
+
             results = [single_query(x) for x in X_test]
 
         total_time = sum(time for time, _ in results)
@@ -118,6 +129,8 @@ function""" % (
     print("got %d queries" % len(X_test))
 
     X_train, X_test = dataset_transform(D)
+
+    print(f"final size is : {len(X_train)}")
 
     try:
         if hasattr(algo, "supports_prepared_queries"):

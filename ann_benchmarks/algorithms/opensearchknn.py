@@ -1,5 +1,6 @@
 from time import sleep
 from urllib.request import Request, urlopen
+import traceback
 
 from opensearchpy import ConnectionError, OpenSearch
 from opensearchpy.helpers import bulk
@@ -65,11 +66,17 @@ class OpenSearchKNN(BaseANN):
         (_, errors) = bulk(self.client, gen(), chunk_size=500, max_retries=2, request_timeout=10)
         assert len(errors) == 0, errors
 
-        print("Force Merge...")
-        self.client.indices.forcemerge(self.name, max_num_segments=1, request_timeout=1000)
+        try:
+            print("Force Merge...")
+            self.client.indices.forcemerge(self.name, max_num_segments=1, request_timeout=10000)
+        except Exception as e:
+            print(f"Running force again due to error.....")
+            traceback.print_exc()
+            print("Force Merge...")
+            self.client.indices.forcemerge(self.name, max_num_segments=1, request_timeout=10000)
 
         print("Refreshing the Index...")
-        self.client.indices.refresh(self.name, request_timeout=1000)
+        self.client.indices.refresh(self.name, request_timeout=10000)
 
         print("Running Warmup API...")
         res = urlopen(Request("http://localhost:9200/_plugins/_knn/warmup/" + self.name + "?pretty"))
