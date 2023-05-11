@@ -6,7 +6,7 @@ from opensearchpy.helpers import bulk
 from tqdm import tqdm
 
 from .base import BaseANN
-
+import traceback
 
 class OpenSearchKNN(BaseANN):
     def __init__(self, metric, dimension, method_param):
@@ -18,7 +18,7 @@ class OpenSearchKNN(BaseANN):
         self.client = OpenSearch(["http://localhost:9200"])
         self._wait_for_health_status()
 
-    def _wait_for_health_status(self, wait_seconds=30, status="yellow"):
+    def _wait_for_health_status(self, wait_seconds=120, status="yellow"):
         for _ in range(wait_seconds):
             try:
                 self.client.cluster.health(wait_for_status=status)
@@ -36,7 +36,6 @@ class OpenSearchKNN(BaseANN):
 
         mapping = {
             "properties": {
-                "id": {"type": "keyword", "store": True},
                 "vec": {
                     "type": "knn_vector",
                     "dimension": self.dimension,
@@ -60,24 +59,31 @@ class OpenSearchKNN(BaseANN):
 
         def gen():
             for i, vec in enumerate(tqdm(X)):
-                yield {"_op_type": "index", "_index": self.name, "vec": vec.tolist(), "id": str(i + 1)}
+                yield {"_op_type": "index", "_index": self.name, "vec": vec.tolist(), "_id": str(i + 1)}
 
-        (_, errors) = bulk(self.client, gen(), chunk_size=500, max_retries=2, request_timeout=10)
+        (_, errors) = bulk(self.client, gen(), chunk_size=200, max_retries=2, request_timeout=2000)
         assert len(errors) == 0, errors
 
-        print("Force Merge...")
-        self.client.indices.forcemerge(self.name, max_num_segments=1, request_timeout=1000)
-
+        i = 1
+        while i <= 3:
+            try:
+                i = i + 1
+                print(f"Force Merge iteration {i}...")
+                self.client.indices.forcemerge(self.name, max_num_segments=1, request_timeout=10000)
+                # ensuring the force merge is completed
+                break
+            except Exception as e:
+                print(f"Running force again due to error.....")
+                traceback.print_exc()
         print("Refreshing the Index...")
-        self.client.indices.refresh(self.name, request_timeout=1000)
-
-        print("Running Warmup API...")
-        res = urlopen(Request("http://localhost:9200/_plugins/_knn/warmup/" + self.name + "?pretty"))
-        print(res.read().decode("utf-8"))
+        self.client.indices.refresh(self.name, request_timeout=10000)
 
     def set_query_arguments(self, ef):
         body = {"settings": {"index": {"knn.algo_param.ef_search": ef}}}
         self.client.indices.put_settings(body=body)
+        print("Running Warmup API after setting query arguments...")
+        res = urlopen(Request("http://localhost:9200/_plugins/_knn/warmup/" + self.name + "?pretty"), timeout=10000)
+        print(res.read().decode("utf-8"))
 
     def query(self, q, n):
         body = {"query": {"knn": {"vec": {"vector": q.tolist(), "k": n}}}}
@@ -87,13 +93,13 @@ class OpenSearchKNN(BaseANN):
             body=body,
             size=n,
             _source=False,
-            docvalue_fields=["id"],
+            docvalue_fields=["_id"],
             stored_fields="_none_",
-            filter_path=["hits.hits.fields.id"],
+            filter_path=["hits.hits.fields._id"],
             request_timeout=10,
         )
 
-        return [int(h["fields"]["id"][0]) - 1 for h in res["hits"]["hits"]]
+        return [int(h["fields"]["_id"][0]) - 1 for h in res["hits"]["hits"]]
 
     def batch_query(self, X, n):
         self.batch_res = [self.query(q, n) for q in X]
