@@ -36,7 +36,7 @@ def run_worker(cpu, args, queue):
             run(definition, args.dataset, args.count, args.runs, args.batch)
         else:
             memory_margin = 500e6  # reserve some extra memory for misc stuff
-            mem_limit = int((psutil.virtual_memory().available - memory_margin) / args.parallelism)
+            mem_limit = 17179869184 # 16GB -> 1 GB for other tasks
             cpu_limit = str(cpu)
             if args.batch:
                 cpu_limit = "0-%d" % (multiprocessing.cpu_count() - 1)
@@ -78,7 +78,7 @@ def main():
         "--timeout",
         type=int,
         help="Timeout (in seconds) for each individual algorithm run, or -1" "if no timeout should be set",
-        default=-1,
+        default=310000,
     )
     parser.add_argument(
         "--local",

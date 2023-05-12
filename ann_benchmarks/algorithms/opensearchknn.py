@@ -22,6 +22,13 @@ class OpenSearchKNN(BaseANN):
         for _ in range(wait_seconds):
             try:
                 self.client.cluster.health(wait_for_status=status)
+                body = {
+                    "persistent" : {
+                        "knn.memory.circuit_breaker.enabled": False
+                    }
+                }
+                # update cluster settings
+                self.client.cluster.put_settings(body=body)
                 return
             except ConnectionError as e:
                 pass
@@ -31,7 +38,7 @@ class OpenSearchKNN(BaseANN):
 
     def fit(self, X):
         body = {
-            "settings": {"index": {"knn": True}, "knn.memory.circuit_breaker.enabled": False, "knn.memory.circuit_breaker.limit": "90%", "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "20s"}
+            "settings": {"index": {"knn": True}, "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "20s"}
         }
 
         mapping = {
