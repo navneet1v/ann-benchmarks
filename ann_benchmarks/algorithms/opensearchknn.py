@@ -31,7 +31,7 @@ class OpenSearchKNN(BaseANN):
 
     def fit(self, X):
         body = {
-            "settings": {"index": {"knn": True}, "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "20s"}
+            "settings": {"index": {"knn": True}, "knn.memory.circuit_breaker.enabled": False, "knn.memory.circuit_breaker.limit": "90%", "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "20s"}
         }
 
         mapping = {
