@@ -31,7 +31,7 @@ class OpenSearchKNN(BaseANN):
 
     def fit(self, X):
         body = {
-            "settings": {"index": {"knn": True}, "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": -1}
+            "settings": {"index": {"knn": True}, "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "20s"}
         }
 
         mapping = {
@@ -61,7 +61,7 @@ class OpenSearchKNN(BaseANN):
             for i, vec in enumerate(tqdm(X)):
                 yield {"_op_type": "index", "_index": self.name, "vec": vec.tolist(), "_id": str(i + 1)}
 
-        (_, errors) = bulk(self.client, gen(), chunk_size=200, max_retries=2, request_timeout=2000)
+        (_, errors) = bulk(self.client, gen(), chunk_size=200, max_retries=2, request_timeout=20000)
         assert len(errors) == 0, errors
 
         i = 1
@@ -69,20 +69,20 @@ class OpenSearchKNN(BaseANN):
             try:
                 print(f"Force Merge iteration {i}...")
                 i = i + 1
-                self.client.indices.forcemerge(self.name, max_num_segments=1, request_timeout=10000)
+                self.client.indices.forcemerge(self.name, max_num_segments=1, request_timeout=20000)
                 # ensuring the force merge is completed
                 break
             except Exception as e:
                 print(f"Running force again due to error.....")
                 traceback.print_exc()
         print("Refreshing the Index...")
-        self.client.indices.refresh(self.name, request_timeout=10000)
+        self.client.indices.refresh(self.name, request_timeout=20000)
 
     def set_query_arguments(self, ef):
         body = {"settings": {"index": {"knn.algo_param.ef_search": ef}}}
         self.client.indices.put_settings(body=body)
         print("Running Warmup API after setting query arguments...")
-        res = urlopen(Request("http://localhost:9200/_plugins/_knn/warmup/" + self.name + "?pretty"), timeout=10000)
+        res = urlopen(Request("http://localhost:9200/_plugins/_knn/warmup/" + self.name + "?pretty"), timeout=20000)
         print(res.read().decode("utf-8"))
 
     def query(self, q, n):
