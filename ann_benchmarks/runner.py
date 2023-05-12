@@ -256,7 +256,7 @@ def run_docker(definition, dataset, count, runs, timeout, batch, cpu_limit, mem_
         traceback.print_exc()
     finally:
         logger.info("Removing container")
-        container.remove(force=True)
+        #container.remove(force=True)
 
 
 def _handle_container_return_value(return_value, container, logger):
