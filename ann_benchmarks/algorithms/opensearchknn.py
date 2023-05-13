@@ -62,6 +62,9 @@ class OpenSearchKNN(BaseANN):
         self.client.indices.create(self.name, body=body)
         self.client.indices.put_mapping(mapping, self.name)
 
+        res = urlopen(Request("http://localhost:9200/_cat/segments?v"), timeout=20000)
+        print(res.read().decode("utf-8"))
+
         print("Uploading data to the Index:", self.name)
 
         def gen():
@@ -76,7 +79,7 @@ class OpenSearchKNN(BaseANN):
             try:
                 print(f"Force Merge iteration {i}...")
                 i = i + 1
-                self.client.indices.forcemerge(self.name, max_num_segments=1, request_timeout=20000)
+                self.client.indices.forcemerge(self.name, max_num_segments=2, request_timeout=20000)
                 # ensuring the force merge is completed
                 break
             except Exception as e:
@@ -84,6 +87,9 @@ class OpenSearchKNN(BaseANN):
                 traceback.print_exc()
         print("Refreshing the Index...")
         self.client.indices.refresh(self.name, request_timeout=20000)
+        print("Number of segments are: \n")
+        res = urlopen(Request("http://localhost:9200/_cat/segments?v"), timeout=20000)
+        print(res.read().decode("utf-8"))
 
     def set_query_arguments(self, ef):
         body = {"settings": {"index": {"knn.algo_param.ef_search": ef}}}

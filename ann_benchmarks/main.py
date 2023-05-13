@@ -36,7 +36,7 @@ def run_worker(cpu, args, queue):
             run(definition, args.dataset, args.count, args.runs, args.batch)
         else:
             memory_margin = 500e6  # reserve some extra memory for misc stuff
-            mem_limit = 20*1024*1024*1024 # 20GB, it's in bytes
+            mem_limit = 16*1024*1024*1024 # 20GB, it's in bytes
             cpu_limit = str(cpu)
             if args.batch:
                 cpu_limit = "0-%d" % (multiprocessing.cpu_count() - 1)
