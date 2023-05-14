@@ -117,7 +117,9 @@ function""" % (
     print("got a train set of size (%d * %d)" % (X_train.shape[0], dimension))
     print("got %d queries" % len(X_test))
 
-    X_train, X_test = dataset_transform(D)
+    X_train, X_test = D["train"], D["test"]
+    process = psutil.Process()
+    print(f"After transformCurrent process ann rss is : {process.memory_info().rss/1024} in KB")
 
     try:
         if hasattr(algo, "supports_prepared_queries"):
@@ -125,6 +127,7 @@ function""" % (
 
         t0 = time.time()
         memory_usage_before = algo.get_memory_usage()
+        print(f"Mem usage before the start of Algo: {memory_usage_before}")
         algo.fit(X_train)
         build_time = time.time() - t0
         index_size = algo.get_memory_usage() - memory_usage_before

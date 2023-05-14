@@ -52,7 +52,11 @@ def sparse_to_lists(data, lengths):
 
 def dataset_transform(dataset):
     if dataset.attrs.get("type", "dense") != "sparse":
-        return np.array(dataset["train"]), np.array(dataset["test"])
+        # as dataset train size can be large it will increase the overall size of the anonymous region of the process.
+        # hence we return directly the train and test lists. We understand that numpy arrays are fast during access but
+        # with this we are trying to avoid mem usage. This code reduces the mem usage by 50%.
+        # np.array creates a new array and doesn't use the reference.
+        return dataset["train"], dataset["test"]
 
     # we store the dataset as a list of integers, accompanied by a list of lengths in hdf5
     # so we transform it back to the format expected by the algorithms here (array of array of ints)
