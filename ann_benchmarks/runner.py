@@ -117,7 +117,7 @@ function""" % (
     print("got a train set of size (%d * %d)" % (X_train.shape[0], dimension))
     print("got %d queries" % len(X_test))
 
-    X_train, X_test = D["train"], D["test"]
+    X_train, X_test = dataset_transform(D)
     process = psutil.Process()
     print(f"After transformCurrent process ann rss is : {process.memory_info().rss/1024} in KB")
 

@@ -38,7 +38,7 @@ class OpenSearchKNN(BaseANN):
 
     def fit(self, X):
         body = {
-            "settings": {"index": {"knn": True}, "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "20s"}
+            "settings": {"index": {"knn": True}, "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "10s"}
         }
 
         mapping = {
@@ -71,7 +71,7 @@ class OpenSearchKNN(BaseANN):
             for i, vec in enumerate(tqdm(X)):
                 yield {"_op_type": "index", "_index": self.name, "vec": vec.tolist(), "_id": str(i + 1)}
 
-        (_, errors) = bulk(self.client, gen(), chunk_size=200, max_retries=2, request_timeout=20000)
+        (_, errors) = bulk(self.client, gen(), chunk_size=100, max_retries=4, request_timeout=20000)
         assert len(errors) == 0, errors
 
         i = 1
@@ -79,7 +79,7 @@ class OpenSearchKNN(BaseANN):
             try:
                 print(f"Force Merge iteration {i}...")
                 i = i + 1
-                self.client.indices.forcemerge(self.name, max_num_segments=2, request_timeout=20000)
+                self.client.indices.forcemerge(self.name, max_num_segments=5, request_timeout=20000)
                 # ensuring the force merge is completed
                 break
             except Exception as e:
