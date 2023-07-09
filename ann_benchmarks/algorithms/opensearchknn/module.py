@@ -120,5 +120,13 @@ class OpenSearchKNN(BaseANN):
     def freeIndex(self):
         self.client.indices.delete(index=self.index_name)
 
+    def get_stats(self):
+        print("Running K-NN Plugin Stats API to get the Performance Stats...")
+        res = urlopen(Request("http://localhost:9200/_plugins/_knn/stats/?pretty"),
+                      timeout=20000)
+        response = res.read().decode("utf-8")
+        print(response)
+        return response
+
     def __str__(self):
         return f"OpenSearch(index_options: {self.method_param}, ef_search: {self.ef_search})"

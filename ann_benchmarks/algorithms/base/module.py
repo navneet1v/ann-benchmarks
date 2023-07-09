@@ -32,5 +32,8 @@ class BaseANN(object):
     def get_additional(self):
         return {}
 
+    def get_stats(self):
+        return {}
+
     def __str__(self):
         return self.name
