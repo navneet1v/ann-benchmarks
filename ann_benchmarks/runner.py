@@ -97,6 +97,16 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
     return (attrs, results)
 
 
+def get_stats_descriptor(algo):
+    stats = algo.get_stats()
+    nodes_stats = stats["nodes"]
+    for node in nodes_stats:
+        knn_stats = nodes_stats[node]["knn_perf_stats"]
+        print(knn_stats["nmslib_latency(nanoSec)"])
+        print(knn_stats["nmslib_jni_latency(nanoSec)"])
+
+
+
 def run(definition, dataset, count, run_count, batch):
     algo = instantiate_algorithm(definition)
     assert not definition.query_argument_groups or hasattr(
@@ -142,6 +152,7 @@ function""" % (
             if query_arguments:
                 algo.set_query_arguments(*query_arguments)
             descriptor, results = run_individual_query(algo, X_train, X_test, distance, count, run_count, batch)
+            stats = get_stats_descriptor(algo)
             descriptor["build_time"] = build_time
             descriptor["index_size"] = index_size
             descriptor["algo"] = definition.algorithm
@@ -256,7 +267,7 @@ def run_docker(definition, dataset, count, runs, timeout, batch, cpu_limit, mem_
         traceback.print_exc()
     finally:
         logger.info("Removing container")
-        container.remove(force=True)
+        #container.remove(force=True)
 
 
 def _handle_container_return_value(return_value, container, logger):

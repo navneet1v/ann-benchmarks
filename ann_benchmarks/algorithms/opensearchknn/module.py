@@ -1,3 +1,4 @@
+import json
 from time import sleep
 from urllib.request import Request, urlopen
 
@@ -126,7 +127,7 @@ class OpenSearchKNN(BaseANN):
                       timeout=20000)
         response = res.read().decode("utf-8")
         print(response)
-        return response
+        return json.loads(response)
 
     def __str__(self):
         return f"OpenSearch(index_options: {self.method_param}, ef_search: {self.ef_search})"

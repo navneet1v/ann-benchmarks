@@ -3,7 +3,7 @@
 
 FROM ann-benchmarks AS builder
 
-ARG OPENSEARCH_VERSION=2.6.0
+ARG OPENSEARCH_VERSION=2.7.0
 
 WORKDIR /tmp
 
