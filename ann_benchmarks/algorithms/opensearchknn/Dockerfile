@@ -60,5 +60,7 @@ RUN echo '\
 RUN useradd -m opensearch
 RUN echo 'tmux new-session -d -s opensearch """exec gosu opensearch "./opensearch/opensearch-tar-install.sh""""' > entrypoint.sh
 RUN echo 'python3 -u run_algorithm.py "$@"' >> entrypoint.sh
+# Put the k-nn plugin lastest code
+RUN cp -r ann_benchmarks/algorithms/opensearchknn/plugin/* opensearch/plugins/opensearch-knn/
 
 ENTRYPOINT ["/bin/bash", "/home/app/entrypoint.sh"]

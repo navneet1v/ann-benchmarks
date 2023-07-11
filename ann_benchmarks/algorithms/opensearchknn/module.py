@@ -89,6 +89,7 @@ class OpenSearchKNN(BaseANN):
         self.client.indices.refresh(index=self.index_name, request_timeout=20000)
 
     def set_query_arguments(self, ef):
+        print(f"Query Arguments are: ef_search {ef}, params string : {self.param_string}")
         self.ef_search = ef
         body = {"settings": {"index": {"knn.algo_param.ef_search": ef}}}
         self.client.indices.put_settings(body=body)

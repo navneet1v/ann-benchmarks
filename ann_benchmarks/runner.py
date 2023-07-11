@@ -10,18 +10,20 @@ import colors
 import docker
 import numpy
 import psutil
+import re
 
 from .definitions import Definition, instantiate_algorithm
 from .datasets import DATASETS, get_dataset
 from .distance import dataset_transform, metrics
 from .results import store_results
+import numpy as np
 
 
 def run_individual_query(algo, X_train, X_test, distance, count, run_count, batch):
     prepared_queries = (batch and hasattr(algo, "prepare_batch_query")) or (
-        (not batch) and hasattr(algo, "prepare_query")
+            (not batch) and hasattr(algo, "prepare_query")
     )
-
+    query_stats = []
     best_search_time = float("inf")
     for i in range(run_count):
         print("Run %d/%d..." % (i + 1, run_count))
@@ -74,6 +76,21 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
         else:
             results = [single_query(x) for x in X_test]
 
+        query_times = []
+        for time2, _ in results:
+            query_times.append(time2 * 1000)
+
+        query_stat = {
+            "min": min(time3 * 1000 for time3, _ in results),
+            "max": max(time4 * 100 for time4, _ in results),
+            "avg": np.average(query_times),
+            "p50": np.percentile(query_times, 50),
+            "p90": np.percentile(query_times, 90),
+            "p99": np.percentile(query_times, 99)
+        }
+        query_stats.append(query_stat)
+        print(f"Query stats are {query_stat}")
+
         total_time = sum(time for time, _ in results)
         total_candidates = sum(len(candidates) for _, candidates in results)
         search_time = total_time / len(X_test)
@@ -94,17 +111,19 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
     additional = algo.get_additional()
     for k in additional:
         attrs[k] = additional[k]
-    return (attrs, results)
+    return attrs, results, query_stats
 
 
 def get_stats_descriptor(algo):
     stats = algo.get_stats()
     nodes_stats = stats["nodes"]
+    nmslib = []
+    nmslib_jni = []
     for node in nodes_stats:
         knn_stats = nodes_stats[node]["knn_perf_stats"]
-        print(knn_stats["nmslib_latency(nanoSec)"])
-        print(knn_stats["nmslib_jni_latency(nanoSec)"])
-
+        nmslib.append(knn_stats["nmslib_latency(nanoSec)"])
+        nmslib_jni.append(knn_stats["nmslib_jni_latency(nanoSec)"])
+    return nmslib, nmslib_jni
 
 
 def run(definition, dataset, count, run_count, batch):
@@ -151,8 +170,11 @@ function""" % (
             print("Running query argument group %d of %d..." % (pos, len(query_argument_groups)))
             if query_arguments:
                 algo.set_query_arguments(*query_arguments)
-            descriptor, results = run_individual_query(algo, X_train, X_test, distance, count, run_count, batch)
-            stats = get_stats_descriptor(algo)
+            descriptor, results, query_stats = run_individual_query(algo, X_train, X_test, distance, count, run_count,
+                                                                    batch)
+            nmslib, nmslib_jni = get_stats_descriptor(algo)
+            write_stats_in_file(dataset, query_arguments,definition, results, nmslib, nmslib_jni)
+
             descriptor["build_time"] = build_time
             descriptor["index_size"] = index_size
             descriptor["algo"] = definition.algorithm
@@ -160,6 +182,40 @@ function""" % (
             store_results(dataset, count, definition, query_arguments, descriptor, results, batch)
     finally:
         algo.done()
+
+
+def write_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni):
+    d = ["results"]
+    if dataset:
+        d.append(dataset)
+    if definition:
+        data = definition.arguments + query_arguments
+        d.append(re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + ".csv")
+    file_name = os.path.join(*d)
+    file = open(file_name, 'w')
+    lines = []
+    lines.append("query(min)\tquery(max)\tquery(avg)\tquery(p50)\tquery(p90)\tquery(p99)")
+    print("query(min)\tquery(max)\tquery(avg)\tquery(p50)\tquery(p90)\tquery(p99)")
+    for q_stat in query_stats:
+        print(f'{q_stat["min"]}\t{q_stat["max"]}\t{q_stat["avg"]}\t{q_stat["p50"]}\t{q_stat["p90"]}\t{q_stat["p99"]}')
+        lines.append(f'{q_stat["min"]}\t{q_stat["max"]}\t{q_stat["avg"]}\t{q_stat["p50"]}\t{q_stat["p90"]}\t{q_stat["p99"]}')
+
+    print("nmslib(min)\tnmslib(max)\tnmslib(avg)\tnmslib(p50)\tnmslib(p90)\tnmslib(p99)")
+    lines.append("nmslib(min)\tnmslib(max)\tnmslib(avg)\tnmslib(p50)\tnmslib(p90)\tnmslib(p99)")
+    for lib_stat in nmslib:
+        print(
+            f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
+        lines.append(f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
+    print(
+        "nmslib_jni(min)\tnmslib_jni(max)\tnmslib_jni(avg)\tnmslib_jni(p50)\tnmslib_jni(p90)\tnmslib_jni(p99)")
+    lines.append("nmslib_jni(min)\tnmslib_jni(max)\tnmslib_jni(avg)\tnmslib_jni(p50)\tnmslib_jni(p90)\tnmslib_jni(p99)")
+    for lib_stat in nmslib_jni:
+        print(
+            f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
+        lines.append(f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
+
+    file.writelines(lines)
+    file.close()
 
 
 def run_from_cmdline():
@@ -231,7 +287,7 @@ def run_docker(definition, dataset, count, runs, timeout, batch, cpu_limit, mem_
 
     client = docker.from_env()
     if mem_limit is None:
-        mem_limit = psutil.virtual_memory().available
+        mem_limit = 17179869184  # 16GB
 
     container = client.containers.run(
         definition.docker_tag,
@@ -240,6 +296,7 @@ def run_docker(definition, dataset, count, runs, timeout, batch, cpu_limit, mem_
             os.path.abspath("ann_benchmarks"): {"bind": "/home/app/ann_benchmarks", "mode": "ro"},
             os.path.abspath("data"): {"bind": "/home/app/data", "mode": "ro"},
             os.path.abspath("results"): {"bind": "/home/app/results", "mode": "rw"},
+            os.path.abspath("logs"): {"bind": "/home/app/opensearch/logs", "mode": "rw"},
         },
         cpuset_cpus=cpu_limit,
         mem_limit=mem_limit,
@@ -267,7 +324,7 @@ def run_docker(definition, dataset, count, runs, timeout, batch, cpu_limit, mem_
         traceback.print_exc()
     finally:
         logger.info("Removing container")
-        #container.remove(force=True)
+        # container.remove(force=True)
 
 
 def _handle_container_return_value(return_value, container, logger):
