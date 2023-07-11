@@ -173,13 +173,12 @@ function""" % (
             descriptor, results, query_stats = run_individual_query(algo, X_train, X_test, distance, count, run_count,
                                                                     batch)
             nmslib, nmslib_jni = get_stats_descriptor(algo)
-            write_stats_in_file(dataset, query_arguments,definition, results, nmslib, nmslib_jni)
-
             descriptor["build_time"] = build_time
             descriptor["index_size"] = index_size
             descriptor["algo"] = definition.algorithm
             descriptor["dataset"] = dataset
             store_results(dataset, count, definition, query_arguments, descriptor, results, batch)
+            write_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
     finally:
         algo.done()
 
@@ -195,24 +194,33 @@ def write_stats_in_file(dataset, query_arguments, definition, query_stats, nmsli
     file = open(file_name, 'w')
     lines = []
     lines.append("query(min)\tquery(max)\tquery(avg)\tquery(p50)\tquery(p90)\tquery(p99)")
+    lines.append("\n")
     print("query(min)\tquery(max)\tquery(avg)\tquery(p50)\tquery(p90)\tquery(p99)")
+    lines.append("\n")
     for q_stat in query_stats:
         print(f'{q_stat["min"]}\t{q_stat["max"]}\t{q_stat["avg"]}\t{q_stat["p50"]}\t{q_stat["p90"]}\t{q_stat["p99"]}')
         lines.append(f'{q_stat["min"]}\t{q_stat["max"]}\t{q_stat["avg"]}\t{q_stat["p50"]}\t{q_stat["p90"]}\t{q_stat["p99"]}')
+        lines.append("\n")
 
     print("nmslib(min)\tnmslib(max)\tnmslib(avg)\tnmslib(p50)\tnmslib(p90)\tnmslib(p99)")
     lines.append("nmslib(min)\tnmslib(max)\tnmslib(avg)\tnmslib(p50)\tnmslib(p90)\tnmslib(p99)")
+    lines.append("\n")
+
     for lib_stat in nmslib:
         print(
             f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
         lines.append(f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
+        lines.append("\n")
     print(
         "nmslib_jni(min)\tnmslib_jni(max)\tnmslib_jni(avg)\tnmslib_jni(p50)\tnmslib_jni(p90)\tnmslib_jni(p99)")
     lines.append("nmslib_jni(min)\tnmslib_jni(max)\tnmslib_jni(avg)\tnmslib_jni(p50)\tnmslib_jni(p90)\tnmslib_jni(p99)")
+    lines.append("\n")
+
     for lib_stat in nmslib_jni:
         print(
             f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
         lines.append(f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
+        lines.append("\n")
 
     file.writelines(lines)
     file.close()
@@ -286,8 +294,7 @@ def run_docker(definition, dataset, count, runs, timeout, batch, cpu_limit, mem_
     cmd += [json.dumps(qag) for qag in definition.query_argument_groups]
 
     client = docker.from_env()
-    if mem_limit is None:
-        mem_limit = 17179869184  # 16GB
+    mem_limit = 17179869184  # 16GB
 
     container = client.containers.run(
         definition.docker_tag,
