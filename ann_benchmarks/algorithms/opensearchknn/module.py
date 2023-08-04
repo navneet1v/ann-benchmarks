@@ -73,13 +73,14 @@ class OpenSearchKNN(BaseANN):
 
         (_, errors) = bulk(self.client, gen(), chunk_size=100, max_retries=4, request_timeout=20000)
         assert len(errors) == 0, errors
-
+        print("Segment before force_merge and refresh...")
+        print(self.client.indices.segments(index=self.index_name))
         i = 1
-        while i <= 3:
+        while i <= 10:
             try:
                 print(f"Force Merge iteration {i}...")
                 i = i + 1
-                self.client.indices.forcemerge(index=self.index_name, max_num_segments=5, request_timeout=20000)
+                self.client.indices.forcemerge(index=self.index_name, max_num_segments=1, request_timeout=20000)
                 # ensuring the force merge is completed
                 break
             except Exception as e:
@@ -87,6 +88,8 @@ class OpenSearchKNN(BaseANN):
                 traceback.print_exc()
         print("Refreshing the Index...")
         self.client.indices.refresh(index=self.index_name, request_timeout=20000)
+        print("Segments Info After refresh and force merge...")
+        print(self.client.indices.segments(index=self.index_name))
 
     def set_query_arguments(self, ef):
         print(f"Query Arguments are: ef_search {ef}, params string : {self.param_string}")

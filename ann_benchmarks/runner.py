@@ -178,12 +178,13 @@ function""" % (
             descriptor["algo"] = definition.algorithm
             descriptor["dataset"] = dataset
             store_results(dataset, count, definition, query_arguments, descriptor, results, batch)
-            write_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
+            write_stats_full_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
+            write_stats_important_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
     finally:
         algo.done()
 
 
-def write_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni):
+def write_stats_full_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni):
     d = ["results"]
     if dataset:
         d.append(dataset)
@@ -202,6 +203,18 @@ def write_stats_in_file(dataset, query_arguments, definition, query_stats, nmsli
         lines.append(f'{q_stat["min"]}\t{q_stat["max"]}\t{q_stat["avg"]}\t{q_stat["p50"]}\t{q_stat["p90"]}\t{q_stat["p99"]}')
         lines.append("\n")
 
+    print(
+        "nmslib_jni(min)\tnmslib_jni(max)\tnmslib_jni(avg)\tnmslib_jni(p50)\tnmslib_jni(p90)\tnmslib_jni(p99)")
+    lines.append("nmslib_jni(min)\tnmslib_jni(max)\tnmslib_jni(avg)\tnmslib_jni(p50)\tnmslib_jni(p90)\tnmslib_jni(p99)")
+    lines.append("\n")
+
+    for lib_stat in nmslib_jni:
+        print(
+            f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
+        lines.append(
+            f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
+        lines.append("\n")
+
     print("nmslib(min)\tnmslib(max)\tnmslib(avg)\tnmslib(p50)\tnmslib(p90)\tnmslib(p99)")
     lines.append("nmslib(min)\tnmslib(max)\tnmslib(avg)\tnmslib(p50)\tnmslib(p90)\tnmslib(p99)")
     lines.append("\n")
@@ -211,17 +224,37 @@ def write_stats_in_file(dataset, query_arguments, definition, query_stats, nmsli
             f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
         lines.append(f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
         lines.append("\n")
-    print(
-        "nmslib_jni(min)\tnmslib_jni(max)\tnmslib_jni(avg)\tnmslib_jni(p50)\tnmslib_jni(p90)\tnmslib_jni(p99)")
-    lines.append("nmslib_jni(min)\tnmslib_jni(max)\tnmslib_jni(avg)\tnmslib_jni(p50)\tnmslib_jni(p90)\tnmslib_jni(p99)")
+
+    file.writelines(lines)
+    file.close()
+
+
+def write_stats_important_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni):
+    d = ["results"]
+    if dataset:
+        d.append(dataset)
+    if definition:
+        data = definition.arguments + query_arguments
+        d.append(re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + "_important_stats.csv")
+    file_name = os.path.join(*d)
+    file = open(file_name, 'w')
+    lines = []
+    lines.append("query(p90),query(p99),nmslib_jni(p90),nmslib_jni(p99),nmslib(p90),nmslib(p99)")
     lines.append("\n")
+    metrics_string = ""
+    for q_stat in query_stats:
+        metrics_string = metrics_string + f'{q_stat["p90"]},{q_stat["p99"]},'
 
-    for lib_stat in nmslib_jni:
-        print(
-            f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
-        lines.append(f'{lib_stat["min"]}\t{lib_stat["max"]}\t{lib_stat["average"]}\t{lib_stat["p50"]}\t{lib_stat["p90"]}\t{lib_stat["p99"]}')
-        lines.append("\n")
+    for jni_stat in nmslib_jni:
+        metrics_string = metrics_string + f'{float(jni_stat["p90"])/1000000},{float(jni_stat["p99"])/1000000},'
 
+    for lib_stat in nmslib:
+        metrics_string = metrics_string + f'{float(lib_stat["p90"])/1000000},{float(lib_stat["p99"])/1000000},'
+
+    lines.append(metrics_string)
+    print("query(p90),query(p99),nmslib_jni(p90),nmslib_jni(p99),nmslib(p90),nmslib(p99)")
+    print(metrics_string)
+    lines.append("\n")
     file.writelines(lines)
     file.close()
 
