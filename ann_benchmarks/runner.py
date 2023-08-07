@@ -114,8 +114,11 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
     return attrs, results, query_stats
 
 
-def get_stats_descriptor(algo):
+def get_stats_descriptor(algo, algo_name):
     stats = algo.get_stats()
+    if algo_name != "opensearchknn":
+        return [], []
+
     nodes_stats = stats["nodes"]
     nmslib = []
     nmslib_jni = []
@@ -172,14 +175,15 @@ function""" % (
                 algo.set_query_arguments(*query_arguments)
             descriptor, results, query_stats = run_individual_query(algo, X_train, X_test, distance, count, run_count,
                                                                     batch)
-            nmslib, nmslib_jni = get_stats_descriptor(algo)
+            nmslib, nmslib_jni = get_stats_descriptor(algo, definition.algorithm)
             descriptor["build_time"] = build_time
             descriptor["index_size"] = index_size
             descriptor["algo"] = definition.algorithm
             descriptor["dataset"] = dataset
             store_results(dataset, count, definition, query_arguments, descriptor, results, batch)
-            write_stats_full_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
-            write_stats_important_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
+            if definition.algorithm is "opensearchknn":
+                write_stats_full_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
+                write_stats_important_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
     finally:
         algo.done()
 

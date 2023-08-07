@@ -8,6 +8,7 @@ float:
     name: redisearch
     run_groups:
       redisearch:
-        arg_groups: [[4, 8, 12, 16, 24, 36, 48, 64, 96]]
+        #arg_groups: [[4, 8, 12, 16, 24, 36, 48, 64, 96]]
+        arg_groups: [[16]]
         args: {}
         query_args: [[10, 20, 40, 80, 120, 200, 400, 600, 800]]
