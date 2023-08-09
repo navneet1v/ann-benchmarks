@@ -37,7 +37,7 @@ def run_worker(cpu, args, queue):
         else:
             memory_margin = 500e6  # reserve some extra memory for misc stuff
             mem_limit = int((psutil.virtual_memory().available - memory_margin) / args.parallelism)
-            cpu_limit = str(cpu)
+            cpu_limit = str(2)
             if args.batch:
                 cpu_limit = "0-%d" % (multiprocessing.cpu_count() - 1)
 

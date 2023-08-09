@@ -1,5 +1,5 @@
 FROM ubuntu:22.04
-
+RUN touch /etc/apt/sources.list
 RUN apt-get update
 RUN apt-get install -y python3-numpy python3-scipy python3-pip build-essential git
 RUN pip3 install -U pip
