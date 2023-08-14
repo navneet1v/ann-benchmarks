@@ -181,7 +181,7 @@ function""" % (
             descriptor["algo"] = definition.algorithm
             descriptor["dataset"] = dataset
             store_results(dataset, count, definition, query_arguments, descriptor, results, batch)
-            if definition.algorithm is "opensearchknn":
+            if definition.algorithm == "opensearchknn":
                 write_stats_full_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
                 write_stats_important_stats_in_file(dataset, query_arguments, definition, query_stats, nmslib, nmslib_jni)
     finally:

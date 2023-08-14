@@ -1,10 +1,12 @@
 import json
-from time import sleep
+from time import sleep, time
 from urllib.request import Request, urlopen
 
 from opensearchpy import ConnectionError, OpenSearch
 from opensearchpy.helpers import bulk
 from tqdm import tqdm
+from urllib3 import Timeout, PoolManager
+import numpy as np
 
 from ..base.module import BaseANN
 import traceback
@@ -20,6 +22,13 @@ class OpenSearchKNN(BaseANN):
         self.client = OpenSearch(["http://localhost:9200"])
         self.ef_search = None
         self._wait_for_health_status()
+        self.timeout = Timeout(connect=1000.0, read=5000.0)
+        self.url = f"http://localhost:9200/vector_search/{self.index_name}/_query2"
+        self.http = PoolManager(timeout=self.timeout)
+        self.headers = {"Content-Type": "application/json"}
+        self.total_time = []
+        self.network_time = []
+        self.query_time = []
 
     def _wait_for_health_status(self, wait_seconds=120, status="yellow"):
         for _ in range(wait_seconds):
@@ -41,7 +50,8 @@ class OpenSearchKNN(BaseANN):
 
     def fit(self, X):
         body = {
-            "settings": {"index": {"knn": True}, "number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "10s"}
+            "settings": {"index": {"knn": True}, "number_of_shards": 1, "number_of_replicas": 0,
+                         "refresh_interval": "10s"}
         }
 
         mapping = {
@@ -97,10 +107,35 @@ class OpenSearchKNN(BaseANN):
         body = {"settings": {"index": {"knn.algo_param.ef_search": ef}}}
         self.client.indices.put_settings(body=body)
         print("Running Warmup API after setting query arguments...")
-        res = urlopen(Request("http://localhost:9200/_plugins/_knn/warmup/" + self.index_name + "?pretty"), timeout=20000)
+        res = urlopen(Request("http://localhost:9200/_plugins/_knn/warmup/" + self.index_name + "?pretty"),
+                      timeout=20000)
         print(res.read().decode("utf-8"))
+        # resetting the arrays
+        self.total_time = []
+        self.network_time = []
+        self.query_time = []
 
     def query(self, q, n):
+        # return self.opensearch_query(q, n)
+        return self.simple_query_2(q, n)
+
+    def simple_query_2(self, q, n):
+        stime = get_time()
+        payload = json.dumps({
+            "vector": q.tolist(),
+            "k": n,
+            "vectorFieldName": "vec",
+            "initialNetworkDelay": get_time()
+        })
+        response = self.http.request(method='POST', url=self.url, body=payload, headers=self.headers)
+        endTime = get_time()
+        res_json = json.loads(response.data.decode('utf-8'))
+        self.total_time.append(endTime - stime)
+        self.network_time.append(res_json["initialNetworkDelayInMillis"])
+        self.query_time.append(res_json["timeInNano"] / 1000000)
+        return [int(h["_id"]) - 1 for h in res_json["hits"]]
+
+    def opensearch_query(self, q, n):
         body = {"query": {"knn": {"vec": {"vector": q.tolist(), "k": n}}}}
 
         res = self.client.search(
@@ -125,7 +160,19 @@ class OpenSearchKNN(BaseANN):
     def freeIndex(self):
         self.client.indices.delete(index=self.index_name)
 
+    def print_percentile(self, percentile, array, key):
+        array.sort()
+        print(f'{key}{percentile} : {np.percentile(array, percentile)}')
+
     def get_stats(self):
+        print("Printing Local stats...")
+        self.print_percentile(99, self.total_time, "total_time")
+        self.print_percentile(99, self.network_time, "network_time")
+        self.print_percentile(99, self.query_time, "query_time")
+
+        self.print_percentile(90, self.total_time, "total_time")
+        self.print_percentile(90, self.network_time, "network_time")
+        self.print_percentile(90, self.query_time, "query_time")
         print("Running K-NN Plugin Stats API to get the Performance Stats...")
         res = urlopen(Request("http://localhost:9200/_plugins/_knn/stats/?pretty"),
                       timeout=20000)
@@ -135,3 +182,7 @@ class OpenSearchKNN(BaseANN):
 
     def __str__(self):
         return f"OpenSearch(index_options: {self.method_param}, ef_search: {self.ef_search})"
+
+
+def get_time():
+    return round(time() * 1000)
