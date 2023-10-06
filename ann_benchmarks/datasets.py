@@ -582,6 +582,8 @@ DATASETS: Dict[str, Callable[[str], None]] = {
     "random-xs-20-euclidean": lambda out_fn: random_float(out_fn, 20, 10000, 100, "euclidean"),
     "random-s-100-euclidean": lambda out_fn: random_float(out_fn, 100, 100000, 1000, "euclidean"),
     "random-xs-20-angular": lambda out_fn: random_float(out_fn, 20, 10000, 100, "angular"),
+    "random-xs-1536-angular": lambda out_fn: random_float(out_fn, 1536, 100000, 1000, "angular"),
+    "random-xs-1536-euclidean": lambda out_fn: random_float(out_fn, 1536, 100000, 1000, "euclidean"),
     "random-s-100-angular": lambda out_fn: random_float(out_fn, 100, 100000, 1000, "angular"),
     "random-xs-16-hamming": lambda out_fn: random_bitstring(out_fn, 16, 10000, 100),
     "random-s-128-hamming": lambda out_fn: random_bitstring(out_fn, 128, 50000, 1000),
