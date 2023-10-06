@@ -3,7 +3,7 @@
 
 FROM ann-benchmarks AS builder
 
-ARG OPENSEARCH_VERSION=2.6.0
+ARG OPENSEARCH_VERSION=2.10.0
 
 WORKDIR /tmp
 
@@ -35,21 +35,21 @@ RUN chmod -R 777 opensearch
 
 RUN echo "vm.max_map_count=262144" >> /etc/sysctl.conf
 
-RUN python3 -m pip install --upgrade opensearch-py==2.2.0 tqdm
+RUN python3 -m pip install --upgrade opensearch-py==2.3.1 tqdm
 
 # Configure OpenSearch for single-node, single-core.
 RUN echo '\
 discovery.type: single-node\n\
 network.host: 0.0.0.0\n\
 node.roles: [ data, master ]\n\
-node.processors: 1\n\
-thread_pool.write.size: 1\n\
-thread_pool.search.size: 1\n\
-thread_pool.search.queue_size: 1' > opensearch/config/opensearch.yml
+node.processors: 16\n\
+thread_pool.write.size: 16\n\
+thread_pool.search.size: 16\n\
+thread_pool.search.queue_size: 16' > opensearch/config/opensearch.yml
 
 RUN echo '\
--Xms3G\n\
--Xmx3G\n\
+-Xms32G\n\
+-Xmx32G\n\
 -XX:InitiatingHeapOccupancyPercent=80\n\
 -XX:+HeapDumpOnOutOfMemoryError\n\
 -XX:HeapDumpPath=data\n\
