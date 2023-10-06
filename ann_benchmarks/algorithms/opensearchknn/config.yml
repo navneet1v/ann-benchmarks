@@ -7,10 +7,38 @@ float:
     module: ann_benchmarks.algorithms.opensearchknn
     name: opensearchknn
     run_groups:
-      M-16:
-        arg_groups: [{M: 16, efConstruction: 256}]
+      M-16-efc-100:
+        arg_groups: [{M: 16, efConstruction: 100}]
         args: {}
-        query_args: [[128, 256, 512]]
+        query_args: [[ 100, 128, 256, 512]]
+      M-16-efc-128:
+        arg_groups: [ { M: 16, efConstruction: 128 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-16-efc-256:
+        arg_groups: [ { M: 16, efConstruction: 256 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-16-efc-512:
+        arg_groups: [ { M: 16, efConstruction: 512 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-12-efc-100:
+        arg_groups: [{M: 12, efConstruction: 100}]
+        args: {}
+        query_args: [[ 100, 128, 256, 512]]
+      M-12-efc-128:
+        arg_groups: [ { M: 12, efConstruction: 128 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-12-efc-256:
+        arg_groups: [ { M: 12, efConstruction: 256 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-12-efc-512:
+        arg_groups: [ { M: 12, efConstruction: 512 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
   euclidean:
   - base_args: ['@metric', '@dimension']
     constructor: OpenSearchKNN
@@ -19,7 +47,36 @@ float:
     module: ann_benchmarks.algorithms.opensearchknn
     name: opensearchknn
     run_groups:
-      M-16:
-        arg_groups: [{M: 16, efConstruction: 256}]
+      M-16-efc-100:
+        arg_groups: [{M: 16, efConstruction: 100}]
         args: {}
-        query_args: [[128, 256, 512]]
+        query_args: [[ 100, 128, 256, 512]]
+      M-16-efc-128:
+        arg_groups: [ { M: 16, efConstruction: 128 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-16-efc-256:
+        arg_groups: [ { M: 16, efConstruction: 256 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-16-efc-512:
+        arg_groups: [ { M: 16, efConstruction: 512 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-12-efc-100:
+        arg_groups: [{M: 12, efConstruction: 100}]
+        args: {}
+        query_args: [[ 100, 128, 256, 512]]
+      M-12-efc-128:
+        arg_groups: [ { M: 12, efConstruction: 128 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-12-efc-256:
+        arg_groups: [ { M: 12, efConstruction: 256 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+      M-12-efc-512:
+        arg_groups: [ { M: 12, efConstruction: 512 } ]
+        args: { }
+        query_args: [ [ 100, 128, 256, 512 ] ]
+
