@@ -378,7 +378,7 @@ def random_float(out_fn: str, n_dims: int, n_samples: int, centers: int, distanc
     import sklearn.datasets
 
     X, _ = sklearn.datasets.make_blobs(n_samples=n_samples, n_features=n_dims, centers=centers, random_state=1)
-    X_train, X_test = train_test_split(X, test_size=0.1)
+    X_train, X_test = train_test_split(X)
     write_output(X_train, X_test, out_fn, distance)
 
 
@@ -571,35 +571,13 @@ def dbpedia_entities_openai_1M(out_fn, n = None):
 
 
 DATASETS: Dict[str, Callable[[str], None]] = {
-    "deep-image-96-angular": deep_image,
-    "fashion-mnist-784-euclidean": fashion_mnist,
-    "gist-960-euclidean": gist,
-    "glove-25-angular": lambda out_fn: glove(out_fn, 25),
-    "glove-50-angular": lambda out_fn: glove(out_fn, 50),
-    "glove-100-angular": lambda out_fn: glove(out_fn, 100),
-    "glove-200-angular": lambda out_fn: glove(out_fn, 200),
-    "mnist-784-euclidean": mnist,
-    "random-xs-20-euclidean": lambda out_fn: random_float(out_fn, 20, 10000, 100, "euclidean"),
-    "random-s-100-euclidean": lambda out_fn: random_float(out_fn, 100, 100000, 1000, "euclidean"),
-    "random-xs-20-angular": lambda out_fn: random_float(out_fn, 20, 10000, 100, "angular"),
-    "random-xs-1536-angular": lambda out_fn: random_float(out_fn, 1536, 100000, 1000, "angular"),
-    "random-xs-1536-euclidean": lambda out_fn: random_float(out_fn, 1536, 100000, 1000, "euclidean"),
-    "random-s-100-angular": lambda out_fn: random_float(out_fn, 100, 100000, 1000, "angular"),
-    "random-xs-16-hamming": lambda out_fn: random_bitstring(out_fn, 16, 10000, 100),
-    "random-s-128-hamming": lambda out_fn: random_bitstring(out_fn, 128, 50000, 1000),
-    "random-l-256-hamming": lambda out_fn: random_bitstring(out_fn, 256, 100000, 1000),
-    "random-s-jaccard": lambda out_fn: random_jaccard(out_fn, n=10000, size=20, universe=40),
-    "random-l-jaccard": lambda out_fn: random_jaccard(out_fn, n=100000, size=70, universe=100),
-    "sift-128-euclidean": sift,
-    "nytimes-256-angular": lambda out_fn: nytimes(out_fn, 256),
-    "nytimes-16-angular": lambda out_fn: nytimes(out_fn, 16),
-    "word2bits-800-hamming": lambda out_fn: word2bits(out_fn, "400K", "w2b_bitlevel1_size800_vocab400K"),
-    "lastfm-64-dot": lambda out_fn: lastfm(out_fn, 64),
-    "sift-256-hamming": lambda out_fn: sift_hamming(out_fn, "sift.hamming.256"),
-    "kosarak-jaccard": lambda out_fn: kosarak(out_fn),
-    "movielens1m-jaccard": movielens1m,
-    "movielens10m-jaccard": movielens10m,
-    "movielens20m-jaccard": movielens20m,
+    "random-s-128-20K-euclidean": lambda out_fn: random_float(out_fn, 128, 20000+10000, 1000, "euclidean"),
+    "random-s-128-10M-euclidean": lambda out_fn: random_float(out_fn, 128, 10000000+10000, 1000, "euclidean"),
+    "random-s-768-10M-euclidean": lambda out_fn: random_float(out_fn, 768, 10000000+10000, 1000, "euclidean"),
+    "random-s-128-100M-euclidean": lambda out_fn: random_float(out_fn, 128, 100000000+10000, 1000, "euclidean"),
+    "random-s-768-100M-euclidean": lambda out_fn: random_float(out_fn, 768, 100000000+10000, 1000, "euclidean"),
+    "random-s-128-500M-euclidean": lambda out_fn: random_float(out_fn, 128, 500000000+10000, 1000, "euclidean"),
+    "random-s-768-500M-euclidean": lambda out_fn: random_float(out_fn, 768, 500000000+10000, 1000, "euclidean"),
 }
 
 DATASETS.update({
