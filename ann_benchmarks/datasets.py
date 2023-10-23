@@ -67,7 +67,7 @@ def get_dataset(dataset_name: str) -> Tuple[h5py.File, int]:
     return hdf5_file, dimension
 
 
-def write_output(train: numpy.ndarray, test: numpy.ndarray, fn: str, distance: str, point_type: str = "float", count: int = 100) -> None:
+def write_output(train: numpy.ndarray, test: numpy.ndarray, fn: str, distance: str, point_type: str = "float", count: int = 100, generate_ground_truth='yes') -> None:
     """
     Writes the provided training and testing data to an HDF5 file. It also computes 
     and stores the nearest neighbors and their distances for the test set using a 
@@ -97,22 +97,22 @@ def write_output(train: numpy.ndarray, test: numpy.ndarray, fn: str, distance: s
         # Create datasets for neighbors and distances
         neighbors_ds = f.create_dataset("neighbors", (len(test), count), dtype=int)
         distances_ds = f.create_dataset("distances", (len(test), count), dtype=float)
+        if generate_ground_truth == 'yes':
+            # Fit the brute-force k-NN model
+            bf = BruteForceBLAS(distance, precision=train.dtype)
+            bf.fit(train)
 
-        # Fit the brute-force k-NN model
-        bf = BruteForceBLAS(distance, precision=train.dtype)
-        bf.fit(train)
+            for i, x in enumerate(test):
+                if i % 1000 == 0:
+                    print(f"{i}/{len(test)}...")
 
-        for i, x in enumerate(test):
-            if i % 1000 == 0:
-                print(f"{i}/{len(test)}...")
+                # Query the model and sort results by distance
+                res = list(bf.query_with_distances(x, count))
+                res.sort(key=lambda t: t[-1])
 
-            # Query the model and sort results by distance
-            res = list(bf.query_with_distances(x, count))
-            res.sort(key=lambda t: t[-1])
-
-            # Save neighbors indices and distances
-            neighbors_ds[i] = [idx for idx, _ in res]
-            distances_ds[i] = [dist for _, dist in res]
+                # Save neighbors indices and distances
+                neighbors_ds[i] = [idx for idx, _ in res]
+                distances_ds[i] = [dist for _, dist in res]
 
 
 """
@@ -374,12 +374,12 @@ def nytimes(out_fn: str, n_dimensions: int) -> None:
     transform_bag_of_words(fn, n_dimensions, out_fn)
 
 
-def random_float(out_fn: str, n_dims: int, n_samples: int, centers: int, distance: str) -> None:
+def random_float(out_fn: str, n_dims: int, n_samples: int, centers: int, distance: str, generate_ground_truth='yes') -> None:
     import sklearn.datasets
 
     X, _ = sklearn.datasets.make_blobs(n_samples=n_samples, n_features=n_dims, centers=centers, random_state=1)
     X_train, X_test = train_test_split(X)
-    write_output(X_train, X_test, out_fn, distance)
+    write_output(X_train, X_test, out_fn, distance, generate_ground_truth=generate_ground_truth)
 
 
 def random_bitstring(out_fn: str, n_dims: int, n_samples: int, n_queries: int) -> None:
@@ -570,14 +570,14 @@ def dbpedia_entities_openai_1M(out_fn, n = None):
     write_output(X_train, X_test, out_fn, "angular")
 
 
-DATASETS: Dict[str, Callable[[str], None]] = {
-    "random-s-128-20K-euclidean": lambda out_fn: random_float(out_fn, 128, 20000+10000, 1000, "euclidean"),
-    "random-s-128-10M-euclidean": lambda out_fn: random_float(out_fn, 128, 10000000+10000, 1000, "euclidean"),
-    "random-s-768-10M-euclidean": lambda out_fn: random_float(out_fn, 768, 10000000+10000, 1000, "euclidean"),
-    "random-s-128-100M-euclidean": lambda out_fn: random_float(out_fn, 128, 100000000+10000, 1000, "euclidean"),
-    "random-s-768-100M-euclidean": lambda out_fn: random_float(out_fn, 768, 100000000+10000, 1000, "euclidean"),
-    "random-s-128-500M-euclidean": lambda out_fn: random_float(out_fn, 128, 500000000+10000, 1000, "euclidean"),
-    "random-s-768-500M-euclidean": lambda out_fn: random_float(out_fn, 768, 500000000+10000, 1000, "euclidean"),
+DATASETS: Dict[str, Callable[[str, str], None]] = {
+    "random-s-128-20K-euclidean": lambda out_fn, generate_ground_truth: random_float(out_fn, 128, 20000+10000, 10, "euclidean", generate_ground_truth=generate_ground_truth),
+    "random-s-128-10M-euclidean": lambda out_fn, generate_ground_truth: random_float(out_fn, 128, 10000000+10000, 1000, "euclidean", generate_ground_truth=generate_ground_truth),
+    "random-s-768-10M-euclidean": lambda out_fn, generate_ground_truth: random_float(out_fn, 768, 10000000+10000, 1000, "euclidean", generate_ground_truth=generate_ground_truth),
+    "random-s-128-100M-euclidean": lambda out_fn, generate_ground_truth: random_float(out_fn, 128, 100000000+10000, 1000, "euclidean", generate_ground_truth=generate_ground_truth),
+    "random-s-768-100M-euclidean": lambda out_fn, generate_ground_truth: random_float(out_fn, 768, 100000000+10000, 1000, "euclidean", generate_ground_truth=generate_ground_truth),
+    "random-s-128-500M-euclidean": lambda out_fn, generate_ground_truth: random_float(out_fn, 128, 500000000+10000, 1000, "euclidean", generate_ground_truth=generate_ground_truth),
+    "random-s-768-500M-euclidean": lambda out_fn, generate_ground_truth: random_float(out_fn, 768, 500000000+10000, 1000, "euclidean", generate_ground_truth=generate_ground_truth),
 }
 
 DATASETS.update({
